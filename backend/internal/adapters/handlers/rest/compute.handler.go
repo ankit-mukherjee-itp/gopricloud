@@ -1,4 +1,4 @@
-package handler
+package rest
 
 import (
 	"encoding/json"
@@ -8,18 +8,18 @@ import (
 
 	"github.com/google/uuid"
 
-	"gopricloud/gopricloud/internal/delivery/http/dto"
-	"gopricloud/gopricloud/internal/delivery/http/httpx"
-	"gopricloud/gopricloud/internal/delivery/http/middleware"
-	"gopricloud/gopricloud/internal/domain"
-	"gopricloud/gopricloud/internal/usecase"
+	"backend/internal/adapters/api"
+	"backend/internal/adapters/handlers/rest/dto"
+	"backend/internal/adapters/handlers/rest/middleware"
+	"backend/internal/core/domain"
+	"backend/internal/core/services"
 )
 
 type ComputeHandler struct {
-	compute *usecase.ComputeUsecase
+	compute *services.ComputeUsecase
 }
 
-func NewComputeHandler(compute *usecase.ComputeUsecase) *ComputeHandler {
+func NewComputeHandler(compute *services.ComputeUsecase) *ComputeHandler {
 	return &ComputeHandler{compute: compute}
 }
 
@@ -32,13 +32,13 @@ func (h *ComputeHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.CreateComputeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpx.WriteError(w, http.StatusBadRequest, "invalid request body")
+		api.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" || req.ImageRef == "" || req.FlavorRef == "" {
-		httpx.WriteError(w, http.StatusBadRequest, "name, image_ref and flavor_ref are required")
+		api.WriteError(w, http.StatusBadRequest, "name, image_ref and flavor_ref are required")
 		return
 	}
 
@@ -49,11 +49,11 @@ func (h *ComputeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		NetworkID: req.NetworkID,
 	})
 	if err != nil {
-		httpx.WriteError(w, http.StatusBadGateway, "could not provision instance: "+err.Error())
+		api.WriteError(w, http.StatusBadGateway, "could not provision instance: "+err.Error())
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusCreated, dto.NewComputeResponse(record))
+	api.WriteJSON(w, http.StatusCreated, dto.NewComputeResponse(record))
 }
 
 // List handles GET /instances: the instances userID has provisioned, as
@@ -66,11 +66,11 @@ func (h *ComputeHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	records, err := h.compute.List(r.Context(), userID)
 	if err != nil {
-		httpx.WriteError(w, http.StatusInternalServerError, "could not list instances")
+		api.WriteError(w, http.StatusInternalServerError, "could not list instances")
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, dto.NewComputeListResponse(records))
+	api.WriteJSON(w, http.StatusOK, dto.NewComputeListResponse(records))
 }
 
 // Get handles GET /instances/{id}: live state from Nova for one of
@@ -85,14 +85,14 @@ func (h *ComputeHandler) Get(w http.ResponseWriter, r *http.Request) {
 	server, err := h.compute.Get(r.Context(), userID, serviceID)
 	if err != nil {
 		if errors.Is(err, domain.ErrComputeNotFound) {
-			httpx.WriteError(w, http.StatusNotFound, "instance not found")
+			api.WriteError(w, http.StatusNotFound, "instance not found")
 			return
 		}
-		httpx.WriteError(w, http.StatusBadGateway, "could not fetch instance: "+err.Error())
+		api.WriteError(w, http.StatusBadGateway, "could not fetch instance: "+err.Error())
 		return
 	}
 
-	httpx.WriteJSON(w, http.StatusOK, dto.NewComputeServerResponse(server))
+	api.WriteJSON(w, http.StatusOK, dto.NewComputeServerResponse(server))
 }
 
 // Delete handles DELETE /instances/{id}: destroys the server in Nova and
@@ -106,10 +106,10 @@ func (h *ComputeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	serviceID := r.PathValue("id")
 	if err := h.compute.Delete(r.Context(), userID, serviceID); err != nil {
 		if errors.Is(err, domain.ErrComputeNotFound) {
-			httpx.WriteError(w, http.StatusNotFound, "instance not found")
+			api.WriteError(w, http.StatusNotFound, "instance not found")
 			return
 		}
-		httpx.WriteError(w, http.StatusBadGateway, "could not delete instance: "+err.Error())
+		api.WriteError(w, http.StatusBadGateway, "could not delete instance: "+err.Error())
 		return
 	}
 
@@ -122,7 +122,7 @@ func userIDFromRequest(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool)
 	raw, _ := r.Context().Value(middleware.UserIDContextKey).(string)
 	userID, err := uuid.Parse(raw)
 	if err != nil {
-		httpx.WriteError(w, http.StatusUnauthorized, "invalid access token")
+		api.WriteError(w, http.StatusUnauthorized, "invalid access token")
 		return uuid.UUID{}, false
 	}
 	return userID, true

@@ -1,19 +1,18 @@
-package http
+package rest
 
 import (
 	"net/http"
 
-	"gopricloud/gopricloud/internal/delivery/http/handler"
-	"gopricloud/gopricloud/internal/delivery/http/middleware"
-	"gopricloud/gopricloud/internal/token"
+	"backend/internal/adapters/handlers/rest/middleware"
+	"backend/internal/core/token"
 )
 
 // NewRouter wires the public auth endpoints and the JWT-protected /test and
 // /instances endpoints onto a stdlib ServeMux.
 func NewRouter(
-	authHandler *handler.AuthHandler,
-	testHandler *handler.TestHandler,
-	computeHandler *handler.ComputeHandler,
+	authHandler *AuthHandler,
+	testHandler *TestHandler,
+	computeHandler *ComputeHandler,
 	jwtManager *token.JWTManager,
 ) http.Handler {
 	mux := http.NewServeMux()

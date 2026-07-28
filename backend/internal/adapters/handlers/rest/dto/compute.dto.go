@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"gopricloud/gopricloud/internal/domain"
+	"backend/internal/core/domain"
 )
 
 type CreateComputeRequest struct {

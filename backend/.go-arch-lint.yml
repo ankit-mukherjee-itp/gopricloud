@@ -1,0 +1,111 @@
+version: 3
+workdir: .
+
+# Architecture-boundary linter (go-arch-lint). Enforces the Clean Architecture
+# dependency rule mechanically: source-code dependencies point inward only.
+# Run `make arch`. A violation fails the build — fix it by moving the code to the
+# correct layer, NEVER by widening a rule here.
+#
+# Components are listed with explicit paths (not globs) so every Go package in the
+# tree attaches to exactly one component; a package attaching to nothing would
+# silently escape these rules.
+
+allow:
+  # ---------------------------------------------------------------------------
+  # NOTE — DELIBERATE, OWNER-APPROVED DEVIATION FROM THE REFERENCE ARCHITECTURE.
+  #
+  # The reference sets depOnAnyVendor:false and grants the core NO vendor access,
+  # making a pure core (domain/ports/services = stdlib + each other only) a
+  # protected invariant. THAT INVARIANT DOES NOT HOLD IN THIS PROJECT, and this
+  # config does not pretend otherwise. Measured, not assumed — 11 vendor import
+  # lines currently sit inside core-destined packages:
+  #
+  #   internal/core/domain    (3 files)  github.com/google/uuid
+  #   internal/core/ports     (3 files)  github.com/google/uuid
+  #   internal/core/services  (2 files)  github.com/google/uuid, golang.org/x/crypto/bcrypt
+  #   internal/core/token     (1 file)   github.com/golang-jwt/jwt/v5, github.com/google/uuid
+  #
+  # Rather than rewrite that code, the owner accepted vendor-in-core, so the
+  # components below carry explicit `anyVendorDeps: true` grants. What this config
+  # therefore still buys — and it is worth having — is enforcement of the
+  # DEPENDENCY DIRECTION: nothing under internal/core/** may import an adapter,
+  # a handler, or the composition root. That check is real and still active.
+  #
+  # Do NOT read a green `make arch` as "the core is pure." It is not.
+  # ---------------------------------------------------------------------------
+  depOnAnyVendor: false
+  # Keep false. deepScan traces DI / data-flow and misattributes the composition
+  # root's wiring (cmd builds a concrete adapter and injects it through a port) as
+  # a phantom adapter->service edge. We enforce the import graph, not data-flow.
+  deepScan: false
+
+excludeFiles:
+  - "^.*_test\\.go$"
+
+components:
+  # --- core ---
+  domain:   { in: internal/core/domain }
+  ports:    { in: internal/core/ports }
+  services: { in: internal/core/services }
+  token:    { in: internal/core/token }
+
+  # --- adapters ---
+  api:            { in: internal/adapters/api }
+  handlers:       { in: internal/adapters/handlers/rest }
+  handlers-dto:   { in: internal/adapters/handlers/rest/dto }
+  handlers-mw:    { in: internal/adapters/handlers/rest/middleware }
+  repositories:   { in: internal/adapters/repositories/postgres }
+  providers:      { in: internal/adapters/providers/openstack }
+
+  # --- root-level ---
+  configs:    { in: configs }
+  tools:      { in: tools }
+  cmd:        { in: cmd }
+  cmd-server: { in: cmd/server }
+
+deps:
+  # CORE. Dependency direction is the invariant enforced here: no core package may
+  # name an adapter, a handler, or cmd. (domain depends on nothing, so it is
+  # intentionally omitted.) The anyVendorDeps grants are the documented deviation
+  # explained in the banner above.
+  ports:
+    mayDependOn: [domain]
+    anyVendorDeps: true          # google/uuid in the port signatures
+  services:
+    mayDependOn: [domain, ports, token]
+    anyVendorDeps: true          # google/uuid, bcrypt
+  token:
+    mayDependOn: []
+    anyVendorDeps: true          # golang-jwt, google/uuid
+
+  # ADAPTERS.
+  repositories:
+    mayDependOn: [domain, ports]
+    anyVendorDeps: true          # pgx driver
+  providers:
+    mayDependOn: [domain, ports]
+    anyVendorDeps: true          # gophercloud (OpenStack Nova)
+  handlers:
+    mayDependOn: [domain, ports, services, token, api, handlers-dto, handlers-mw]
+    anyVendorDeps: true
+  handlers-dto:
+    mayDependOn: [domain, services]
+  handlers-mw:
+    mayDependOn: [api, token]
+    anyVendorDeps: true
+  api:
+    mayDependOn: [handlers-dto]
+    anyVendorDeps: true          # HTTP transport types
+  configs:
+    mayDependOn: [tools]
+    anyVendorDeps: true          # godotenv
+  # tools: stdlib-only leaf. Depends on nothing — omitted.
+
+  # COMPOSITION ROOT — the deliberate escape hatch, exactly one per project: cmd
+  # constructs concrete adapters and injects them into services.
+  cmd:
+    mayDependOn: [domain, ports, services, token, repositories, providers, handlers, handlers-dto, handlers-mw, api, configs, tools, cmd-server]
+    anyVendorDeps: true
+  cmd-server:
+    mayDependOn: [ports, api]
+    anyVendorDeps: true

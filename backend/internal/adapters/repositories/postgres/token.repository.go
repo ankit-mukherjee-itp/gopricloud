@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"gopricloud/gopricloud/internal/domain"
-	"gopricloud/gopricloud/internal/repository"
+	"backend/internal/core/domain"
+	"backend/internal/core/ports"
 )
 
 type refreshTokenRepository struct {
@@ -17,8 +17,8 @@ type refreshTokenRepository struct {
 }
 
 // NewRefreshTokenRepository returns a Postgres-backed
-// repository.RefreshTokenRepository.
-func NewRefreshTokenRepository(db *sql.DB) repository.RefreshTokenRepository {
+// ports.RefreshTokenRepository.
+func NewRefreshTokenRepository(db *sql.DB) ports.RefreshTokenRepository {
 	return &refreshTokenRepository{db: db}
 }
 

@@ -1,4 +1,4 @@
-package usecase
+package services
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
-	"gopricloud/gopricloud/internal/domain"
-	"gopricloud/gopricloud/internal/repository"
-	"gopricloud/gopricloud/internal/token"
+	"backend/internal/core/domain"
+	"backend/internal/core/ports"
+	"backend/internal/core/token"
 )
 
 // AuthResult is returned by every auth flow that hands the caller a fresh
@@ -25,15 +25,15 @@ type AuthResult struct {
 }
 
 type AuthUsecase struct {
-	users      repository.UserRepository
-	tokens     repository.RefreshTokenRepository
+	users      ports.UserRepository
+	tokens     ports.RefreshTokenRepository
 	jwt        *token.JWTManager
 	refreshTTL time.Duration
 }
 
 func NewAuthUsecase(
-	users repository.UserRepository,
-	tokens repository.RefreshTokenRepository,
+	users ports.UserRepository,
+	tokens ports.RefreshTokenRepository,
 	jwt *token.JWTManager,
 	refreshTTL time.Duration,
 ) *AuthUsecase {

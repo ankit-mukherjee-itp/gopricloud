@@ -1,10 +1,10 @@
-package repository
+package ports
 
 import (
 	"context"
 
+	"backend/internal/core/domain"
 	"github.com/google/uuid"
-	"gopricloud/gopricloud/internal/domain"
 )
 
 // ComputeRepository is the persistence port for domain.Compute records.

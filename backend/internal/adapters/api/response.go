@@ -1,12 +1,12 @@
 // Package httpx holds small JSON response helpers shared by handlers and
 // middleware, kept separate to avoid a net/http <-> http package name clash.
-package httpx
+package api
 
 import (
 	"encoding/json"
 	"net/http"
 
-	"gopricloud/gopricloud/internal/delivery/http/dto"
+	"backend/internal/adapters/handlers/rest/dto"
 )
 
 func WriteJSON(w http.ResponseWriter, status int, body any) {

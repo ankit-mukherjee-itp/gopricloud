@@ -1,10 +1,30 @@
-package config
+package configs
 
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
+
+	"github.com/joho/godotenv"
+
+	"backend/tools"
 )
+
+// LoadEnv loads variables from the .env file beside go.mod when one is
+// available (a development convenience), so the process finds it regardless of
+// which subdirectory it was started from. A compiled binary deployed without
+// its source tree has no go.mod/.env — that is expected: real environment
+// variables take precedence and are used directly, so this never fails the
+// program. Load() still rejects a missing DATABASE_URL/JWT_SECRET, so nothing
+// starts silently misconfigured.
+func LoadEnv() {
+	if rootDir, err := tools.FindRootDir(); err == nil {
+		_ = godotenv.Load(filepath.Join(rootDir, ".env"))
+	}
+	// Fall back to a .env in the working directory if present; ignore if absent.
+	_ = godotenv.Load()
+}
 
 // Config holds all runtime configuration, sourced from environment
 // variables so the same binary works across environments without rebuilds.

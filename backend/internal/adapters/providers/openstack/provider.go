@@ -1,4 +1,4 @@
-package compute
+package openstack
 
 import (
 	"context"
@@ -9,11 +9,11 @@ import (
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack/compute/v2/servers"
 
-	"gopricloud/gopricloud/internal/domain"
-	"gopricloud/gopricloud/internal/repository"
+	"backend/internal/core/domain"
+	"backend/internal/core/ports"
 )
 
-// Provider implements repository.ComputeProvider on top of Nova. It
+// Provider implements ports.ComputeProvider on top of Nova. It
 // authenticates lazily, on first use, so an unreachable or misconfigured
 // OpenStack cloud only breaks compute endpoints rather than the whole API
 // (auth, /test, etc. don't depend on OpenStack at all).
@@ -24,14 +24,14 @@ type Provider struct {
 	client *gophercloud.ServiceClient
 }
 
-// NewProvider returns a repository.ComputeProvider that will authenticate
+// NewProvider returns a ports.ComputeProvider that will authenticate
 // against the named cloud entry (in clouds.yaml) the first time it's asked
 // to do anything.
 func NewProvider(cloudName string) *Provider {
 	return &Provider{cloudName: cloudName}
 }
 
-var _ repository.ComputeProvider = (*Provider)(nil)
+var _ ports.ComputeProvider = (*Provider)(nil)
 
 func (p *Provider) ensureClient(ctx context.Context) (*gophercloud.ServiceClient, error) {
 	p.mu.Lock()

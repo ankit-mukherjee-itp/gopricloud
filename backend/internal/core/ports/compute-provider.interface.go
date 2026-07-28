@@ -1,9 +1,9 @@
-package repository
+package ports
 
 import (
 	"context"
 
-	"gopricloud/gopricloud/internal/domain"
+	"backend/internal/core/domain"
 )
 
 // ComputeProvider is the port for provisioning compute instances against an

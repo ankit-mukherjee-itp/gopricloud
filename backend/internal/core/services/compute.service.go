@@ -1,4 +1,4 @@
-package usecase
+package services
 
 import (
 	"context"
@@ -7,18 +7,18 @@ import (
 
 	"github.com/google/uuid"
 
-	"gopricloud/gopricloud/internal/domain"
-	"gopricloud/gopricloud/internal/repository"
+	"backend/internal/core/domain"
+	"backend/internal/core/ports"
 )
 
 // ComputeUsecase provisions and tears down OpenStack compute instances on
 // behalf of a user, keeping a per-user record of what was provisioned.
 type ComputeUsecase struct {
-	computes repository.ComputeRepository
-	provider repository.ComputeProvider
+	computes ports.ComputeRepository
+	provider ports.ComputeProvider
 }
 
-func NewComputeUsecase(computes repository.ComputeRepository, provider repository.ComputeProvider) *ComputeUsecase {
+func NewComputeUsecase(computes ports.ComputeRepository, provider ports.ComputeProvider) *ComputeUsecase {
 	return &ComputeUsecase{computes: computes, provider: provider}
 }
 

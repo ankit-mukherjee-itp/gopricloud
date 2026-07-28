@@ -1,0 +1,52 @@
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/checkpoint-guard.mjs\" pre",
+            "timeout": 10,
+            "statusMessage": "Checking for a checkpoint before compacting..."
+          }
+        ]
+      },
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/checkpoint-guard.mjs\" pre",
+            "timeout": 10,
+            "statusMessage": "Checking for a checkpoint before compacting..."
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/checkpoint-guard.mjs\" post",
+            "timeout": 10,
+            "statusMessage": "Restoring checkpoint after compaction..."
+          }
+        ]
+      },
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/checkpoint-guard.mjs\" post",
+            "timeout": 10,
+            "statusMessage": "Restoring checkpoint after compaction..."
+          }
+        ]
+      }
+    ]
+  }
+}

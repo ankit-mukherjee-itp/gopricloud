@@ -2,35 +2,37 @@ package main
 
 import (
 	"context"
-	"github.com/joho/godotenv"
-	"gopricloud/gopricloud/internal/config"
-	deliveryhttp "gopricloud/gopricloud/internal/delivery/http"
-	"gopricloud/gopricloud/internal/delivery/http/handler"
-	"gopricloud/gopricloud/internal/infrastructure/postgres"
-	"gopricloud/gopricloud/internal/token"
-	"gopricloud/gopricloud/internal/usecase"
-	"gopricloud/gopricloud/openstack/compute"
 	"log"
-	"net/http"
 	"os/signal"
 	"syscall"
-	"time"
+
+	"backend/cmd/server"
+	"backend/configs"
+	"backend/internal/adapters/handlers/rest"
+	"backend/internal/adapters/providers/openstack"
+	"backend/internal/adapters/repositories/postgres"
+	"backend/internal/core/services"
+	"backend/internal/core/token"
 )
 
+func init() {
+	configs.LoadEnv()
+}
+
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error", err)
-	}
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
 }
 
+// run is the composition root: it constructs the concrete adapters, injects
+// them into the core services through their ports, and hands the resulting
+// handler to the server.
 func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	cfg, err := config.Load()
+	cfg, err := configs.Load()
 	if err != nil {
 		return err
 	}
@@ -41,43 +43,22 @@ func run() error {
 	}
 	defer db.Close()
 
+	// Outbound adapters.
 	userRepo := postgres.NewUserRepository(db)
 	tokenRepo := postgres.NewRefreshTokenRepository(db)
 	computeRepo := postgres.NewComputeRepository(db)
-	computeProvider := compute.NewProvider(cfg.OSCloudName)
+	computeProvider := openstack.NewProvider(cfg.OSCloudName)
 
+	// Core.
 	jwtManager := token.NewJWTManager(cfg.JWTSecret, cfg.JWTIssuer, cfg.AccessTokenTTL)
-	authUsecase := usecase.NewAuthUsecase(userRepo, tokenRepo, jwtManager, cfg.RefreshTokenTTL)
-	computeUsecase := usecase.NewComputeUsecase(computeRepo, computeProvider)
+	authService := services.NewAuthUsecase(userRepo, tokenRepo, jwtManager, cfg.RefreshTokenTTL)
+	computeService := services.NewComputeUsecase(computeRepo, computeProvider)
 
-	authHandler := handler.NewAuthHandler(authUsecase)
-	testHandler := handler.NewTestHandler()
-	computeHandler := handler.NewComputeHandler(computeUsecase)
-	router := deliveryhttp.NewRouter(authHandler, testHandler, computeHandler, jwtManager)
+	// Inbound adapters.
+	authHandler := rest.NewAuthHandler(authService)
+	testHandler := rest.NewTestHandler()
+	computeHandler := rest.NewComputeHandler(computeService)
+	router := rest.NewRouter(authHandler, testHandler, computeHandler, jwtManager)
 
-	server := &http.Server{
-		Addr:              ":" + cfg.Port,
-		Handler:           router,
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	errCh := make(chan error, 1)
-	go func() {
-		log.Printf("listening on :%s", cfg.Port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errCh <- err
-		}
-	}()
-
-	select {
-	case err := <-errCh:
-		return err
-	case <-ctx.Done():
-	}
-
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	log.Println("shutting down")
-	return server.Shutdown(shutdownCtx)
+	return server.Serve(ctx, router, cfg.Port)
 }

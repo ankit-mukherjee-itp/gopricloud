@@ -1,9 +1,9 @@
-package handler
+package rest
 
 import (
 	"net/http"
 
-	"gopricloud/gopricloud/internal/delivery/http/httpx"
+	"backend/internal/adapters/api"
 )
 
 type TestHandler struct{}
@@ -16,5 +16,5 @@ func NewTestHandler() *TestHandler {
 // confirms the caller holds a valid access token by returning an empty
 // object.
 func (h *TestHandler) Test(w http.ResponseWriter, r *http.Request) {
-	httpx.WriteJSON(w, http.StatusOK, struct{}{})
+	api.WriteJSON(w, http.StatusOK, struct{}{})
 }

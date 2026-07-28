@@ -9,16 +9,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"gopricloud/gopricloud/internal/domain"
-	"gopricloud/gopricloud/internal/repository"
+	"backend/internal/core/domain"
+	"backend/internal/core/ports"
 )
 
 type userRepository struct {
 	db *sql.DB
 }
 
-// NewUserRepository returns a Postgres-backed repository.UserRepository.
-func NewUserRepository(db *sql.DB) repository.UserRepository {
+// NewUserRepository returns a Postgres-backed ports.UserRepository.
+func NewUserRepository(db *sql.DB) ports.UserRepository {
 	return &userRepository{db: db}
 }
 

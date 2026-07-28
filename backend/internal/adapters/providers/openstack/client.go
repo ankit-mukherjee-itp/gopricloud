@@ -1,8 +1,8 @@
-// Package compute is the OpenStack Nova adapter: it only knows how to talk
+// Package openstack is the OpenStack Nova adapter: it only knows how to talk
 // to the compute service via gophercloud, using the cloud entry in
 // clouds.yaml. It has no knowledge of HTTP, the database, or users - that
-// wiring happens in internal/usecase via the repository.ComputeProvider port.
-package compute
+// wiring happens in the composition root via the ports.ComputeProvider port.
+package openstack
 
 import (
 	"context"

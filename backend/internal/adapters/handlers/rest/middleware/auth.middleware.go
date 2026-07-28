@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"gopricloud/gopricloud/internal/delivery/http/httpx"
-	"gopricloud/gopricloud/internal/token"
+	"backend/internal/adapters/api"
+	"backend/internal/core/token"
 )
 
 type contextKey string
@@ -26,7 +26,7 @@ func Auth(jwtManager *token.JWTManager) func(http.Handler) http.Handler {
 
 			authHeader := r.Header.Get("Authorization")
 			if !strings.HasPrefix(authHeader, prefix) {
-				httpx.WriteError(w, http.StatusUnauthorized, "missing bearer token")
+				api.WriteError(w, http.StatusUnauthorized, "missing bearer token")
 				return
 			}
 
@@ -38,7 +38,7 @@ func Auth(jwtManager *token.JWTManager) func(http.Handler) http.Handler {
 				if errors.Is(err, token.ErrExpiredAccessToken) {
 					message = "access token expired"
 				}
-				httpx.WriteError(w, status, message)
+				api.WriteError(w, status, message)
 				return
 			}
 

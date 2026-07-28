@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"gopricloud/gopricloud/internal/usecase"
+	"backend/internal/core/services"
 )
 
 type SignupRequest struct {
@@ -35,8 +35,8 @@ type AuthResponse struct {
 	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
 }
 
-// NewAuthResponse maps a usecase.AuthResult onto the wire representation.
-func NewAuthResponse(result *usecase.AuthResult) AuthResponse {
+// NewAuthResponse maps a services.AuthResult onto the wire representation.
+func NewAuthResponse(result *services.AuthResult) AuthResponse {
 	return AuthResponse{
 		User: UserResponse{
 			ID:    result.User.ID.String(),

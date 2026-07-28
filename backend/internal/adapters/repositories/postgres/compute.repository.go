@@ -8,16 +8,16 @@ import (
 
 	"github.com/google/uuid"
 
-	"gopricloud/gopricloud/internal/domain"
-	"gopricloud/gopricloud/internal/repository"
+	"backend/internal/core/domain"
+	"backend/internal/core/ports"
 )
 
 type computeRepository struct {
 	db *sql.DB
 }
 
-// NewComputeRepository returns a Postgres-backed repository.ComputeRepository.
-func NewComputeRepository(db *sql.DB) repository.ComputeRepository {
+// NewComputeRepository returns a Postgres-backed ports.ComputeRepository.
+func NewComputeRepository(db *sql.DB) ports.ComputeRepository {
 	return &computeRepository{db: db}
 }
 

@@ -1,0 +1,10 @@
+# Host-installed dependencies must never be copied in: they are large, and may
+# contain platform-specific native binaries built for Windows. `npm ci` inside
+# the builder installs the Linux ones from package-lock.json.
+node_modules
+
+# Stale host build output — stage 1 regenerates dist/ from source.
+dist
+
+Dockerfile.frontend
+.dockerignore

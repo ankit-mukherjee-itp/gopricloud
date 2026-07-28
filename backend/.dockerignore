@@ -1,0 +1,16 @@
+# Keep credentials OUT of the image layers. Both are supplied at runtime by
+# docker-compose.yml instead: .env via `env_file`, clouds.yaml via a read-only
+# bind mount to /app/clouds.yaml.
+.env
+clouds.yaml
+
+# Build output and tooling that the image doesn't need.
+bin/
+Dockerfile.backend
+.dockerignore
+Makefile
+.go-arch-lint.yml
+
+# OneDrive conflict copies — if one of these were ever copied in, the image
+# build would fail with "found packages X and Y in the same directory".
+*-ANKIT-MUKHERJEE.go

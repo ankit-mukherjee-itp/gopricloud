@@ -1,0 +1,61 @@
+name: gopricloud
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_DB:-gopricloud}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-gopricloud}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-admin}@postgres:5432/${POSTGRES_DB:-gopricloud}?sslmode=disable
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/clouds.yaml:/app/clouds.yaml:ro
+      - project:/workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    ports:
+      # Host 5173 (the familiar vite port) -> nginx on 80 in the container.
+      - "5173:80"
+    volumes:
+      - project:/workspace
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  # Postgres data. Survives `down`; removed only by `down -v`.
+  pgdata:
+  project:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}
+      o: bind
